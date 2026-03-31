@@ -1,0 +1,55 @@
+name: fitlog
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fitlog_development
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fitlog_local_secret}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rails:
+    build:
+      context: ./my-rails-api
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3000"
+    environment:
+      DATABASE_URL: postgres://postgres:${POSTGRES_PASSWORD:-fitlog_local_secret}@db:5432/fitlog_development
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE:-local_dev_secret_key_please_change_in_production}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      RAILS_ENV: development
+    volumes:
+      - ./my-rails-api:/rails
+      - rails_bundle:/usr/local/bundle
+    depends_on:
+      db:
+        condition: service_healthy
+
+  next:
+    build:
+      context: ./my-next-app
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      RAILS_API_URL: http://rails:3000
+      NEXT_PUBLIC_RAILS_API_URL: http://localhost:3001
+    volumes:
+      - ./my-next-app:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - rails
+
+volumes:
+  db_data:
+  rails_bundle:

@@ -1,0 +1,8 @@
+#!/bin/bash -e
+
+if [[ " $* " =~ " server " ]]; then
+  ./bin/rails db:prepare
+  ./bin/rails db:seed
+fi
+
+exec "${@}"
