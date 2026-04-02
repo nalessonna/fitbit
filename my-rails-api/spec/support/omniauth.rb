@@ -11,7 +11,7 @@ OmniAuth.config.mock_auth[:google] = OmniAuth::AuthHash.new(
 )
 
 RSpec.configure do |config|
-  config.before(:each) do
-    OmniAuth.config.test_mode = true
+  config.before(:each, type: :request) do
+    Rails.application.env_config["omniauth.auth"] = OmniAuth.config.mock_auth[:google]
   end
 end

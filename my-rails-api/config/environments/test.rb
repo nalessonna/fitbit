@@ -1,4 +1,5 @@
 Rails.application.configure do
+  config.hosts << "www.example.com"
   config.enable_reloading = false
   config.eager_load = ENV["CI"].present?
   config.public_file_server.headers = { "cache-control" => "public, max-age=3600" }
