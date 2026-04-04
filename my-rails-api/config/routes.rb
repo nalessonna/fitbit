@@ -22,7 +22,7 @@ Rails.application.routes.draw do
             get :one_rm_history
             get :volume
           end
-          resources :workout_logs, param: :date, only: [ :show, :update ]
+          resources :workout_logs, param: :date, only: [ :show, :update, :destroy ]
         end
       end
     end
