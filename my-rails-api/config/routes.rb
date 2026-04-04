@@ -24,6 +24,12 @@ Rails.application.routes.draw do
           end
           resources :workout_logs, param: :date, only: [ :show, :update, :destroy ]
         end
+        resources :friendships, only: [ :create, :update, :destroy ] do
+          collection do
+            get :friends
+            get :requests
+          end
+        end
       end
     end
   end

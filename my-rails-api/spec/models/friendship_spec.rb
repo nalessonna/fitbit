@@ -26,5 +26,14 @@ RSpec.describe Friendship, type: :model do
       expect(friendship).not_to be_valid
       expect(friendship.errors[:base]).to include("自分自身にフレンド申請はできません")
     end
+
+    it "逆方向の申請が存在する場合は無効であること" do
+      user_a = create(:user)
+      user_b = create(:user)
+      create(:friendship, requester: user_a, receiver: user_b)
+      reverse = build(:friendship, requester: user_b, receiver: user_a)
+      expect(reverse).not_to be_valid
+      expect(reverse.errors[:base]).to include("すでにフレンド関係または申請中です")
+    end
   end
 end
