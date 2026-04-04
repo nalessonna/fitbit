@@ -95,5 +95,48 @@ RSpec.describe "Api::V1::Me::Exercises", type: :request do
         expect(response).to have_http_status(:not_found)
       end
     end
+
+    describe "GET /api/v1/me/exercises/:id/volume" do
+      let(:exercise) { create(:exercise, user: user, body_part: body_part) }
+
+      it "種目別の日別ボリュームを返すこと" do
+        log = create(:workout_log, exercise: exercise, date: "2026-04-10")
+        create(:workout_set, workout_log: log, weight: 80.0, reps: 10)
+        create(:workout_set, workout_log: log, weight: 60.0, reps: 12)
+
+        get "/api/v1/me/exercises/#{exercise.id}/volume"
+
+        expect(response).to have_http_status(:ok)
+        entry = response.parsed_body.find { |e| e["date"] == "2026-04-10" }
+        expect(entry["volume"]).to eq(80.0 * 10 + 60.0 * 12)
+      end
+
+      it "他ユーザーの種目は404を返すこと" do
+        other_exercise = create(:exercise)
+        get "/api/v1/me/exercises/#{other_exercise.id}/volume"
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
+    describe "GET /api/v1/me/exercises/:id/one_rm_history" do
+      let(:exercise) { create(:exercise, user: user, body_part: body_part) }
+
+      it "種目別の日別1RM履歴を返すこと" do
+        log = create(:workout_log, exercise: exercise, date: "2026-04-10")
+        create(:workout_set, workout_log: log, weight: 100.0, reps: 5)
+
+        get "/api/v1/me/exercises/#{exercise.id}/one_rm_history"
+
+        expect(response).to have_http_status(:ok)
+        entry = response.parsed_body.find { |e| e["date"] == "2026-04-10" }
+        expect(entry["one_rm"]).to eq(100.0 * (1 + 5 / 30.0))
+      end
+
+      it "他ユーザーの種目は404を返すこと" do
+        other_exercise = create(:exercise)
+        get "/api/v1/me/exercises/#{other_exercise.id}/one_rm_history"
+        expect(response).to have_http_status(:not_found)
+      end
+    end
   end
 end

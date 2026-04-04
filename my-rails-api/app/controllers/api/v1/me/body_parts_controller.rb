@@ -1,5 +1,7 @@
 class Api::V1::Me::BodyPartsController < ApplicationController
-  before_action :set_body_part, only: [ :destroy ]
+  include PeriodFilterable
+
+  before_action :set_body_part, only: [ :update, :destroy, :volume ]
 
   def index
     body_parts = current_user.body_parts.order(:name)
@@ -13,6 +15,29 @@ class Api::V1::Me::BodyPartsController < ApplicationController
     else
       render json: { errors: body_part.errors.full_messages }, status: :unprocessable_content
     end
+  end
+
+  def update
+    if @body_part.update(body_part_params)
+      render json: body_part_json(@body_part)
+    else
+      render json: { errors: @body_part.errors.full_messages }, status: :unprocessable_content
+    end
+  end
+
+  def volume
+    sets = filter_by_period(
+      WorkoutSet.joins(workout_log: :exercise).where(exercises: { body_part_id: @body_part.id }),
+      column: "workout_logs.date"
+    )
+
+    result = sets
+      .group("workout_logs.date")
+      .sum("workout_sets.weight * workout_sets.reps")
+      .map { |date, vol| { date: date.to_s, volume: vol.to_f } }
+      .sort_by { |e| e[:date] }
+
+    render json: result
   end
 
   def destroy

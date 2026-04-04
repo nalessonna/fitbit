@@ -50,6 +50,28 @@ RSpec.describe "Api::V1::Me::BodyParts", type: :request do
       end
     end
 
+    describe "GET /api/v1/me/body_parts/:id/volume" do
+      let(:body_part) { create(:body_part, user: user) }
+      let(:exercise)  { create(:exercise, user: user, body_part: body_part) }
+
+      it "部位別の日別ボリュームを返すこと" do
+        log = create(:workout_log, exercise: exercise, date: "2026-04-10")
+        create(:workout_set, workout_log: log, weight: 80.0, reps: 10)
+
+        get "/api/v1/me/body_parts/#{body_part.id}/volume"
+
+        expect(response).to have_http_status(:ok)
+        entry = response.parsed_body.find { |e| e["date"] == "2026-04-10" }
+        expect(entry["volume"]).to eq(80.0 * 10)
+      end
+
+      it "他ユーザーの部位は404を返すこと" do
+        other_part = create(:body_part)
+        get "/api/v1/me/body_parts/#{other_part.id}/volume"
+        expect(response).to have_http_status(:not_found)
+      end
+    end
+
     describe "DELETE /api/v1/me/body_parts/:id" do
       let!(:body_part) { create(:body_part, user: user) }
 
