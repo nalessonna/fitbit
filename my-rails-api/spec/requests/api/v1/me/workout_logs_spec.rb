@@ -5,11 +5,6 @@ RSpec.describe "Api::V1::Me::WorkoutLogs", type: :request do
   let(:exercise) { create(:exercise, user: user) }
 
   describe "未認証の場合" do
-    it "GET が401を返すこと" do
-      get "/api/v1/me/workout_logs/2026-04-01"
-      expect(response).to have_http_status(:unauthorized)
-    end
-
     it "PUT が401を返すこと" do
       put "/api/v1/me/workout_logs/2026-04-01"
       expect(response).to have_http_status(:unauthorized)
@@ -23,34 +18,6 @@ RSpec.describe "Api::V1::Me::WorkoutLogs", type: :request do
 
   context "認証済みユーザーとして" do
     before { cookies[:auth_token] = JwtService.encode(user.id) }
-
-    describe "GET /api/v1/me/workout_logs/:date?exercise_id=" do
-      it "指定日のセット一覧を返すこと" do
-        log = create(:workout_log, exercise: exercise, date: "2026-04-01")
-        create(:workout_set, workout_log: log, set_number: 1, weight: 80.0, reps: 10)
-        create(:workout_set, workout_log: log, set_number: 2, weight: 75.0, reps: 12)
-
-        get "/api/v1/me/workout_logs/2026-04-01", params: { exercise_id: exercise.id }
-
-        expect(response).to have_http_status(:ok)
-        body = response.parsed_body
-        expect(body["sets"].length).to eq(2)
-        expect(body["sets"].first["weight"]).to eq(80.0)
-      end
-
-      it "記録がない日はsetsが空で返すこと" do
-        get "/api/v1/me/workout_logs/2026-04-01", params: { exercise_id: exercise.id }
-
-        expect(response).to have_http_status(:ok)
-        expect(response.parsed_body["sets"]).to eq([])
-      end
-
-      it "他ユーザーの種目は404を返すこと" do
-        other_exercise = create(:exercise)
-        get "/api/v1/me/workout_logs/2026-04-01", params: { exercise_id: other_exercise.id }
-        expect(response).to have_http_status(:not_found)
-      end
-    end
 
     describe "PUT /api/v1/me/workout_logs/:date?exercise_id=" do
       it "セットを保存できること" do

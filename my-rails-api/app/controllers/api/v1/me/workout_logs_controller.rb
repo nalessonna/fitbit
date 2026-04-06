@@ -1,11 +1,6 @@
 class Api::V1::Me::WorkoutLogsController < ApplicationController
   before_action :set_exercise
-  before_action :set_log, only: [ :update, :destroy ]
-
-  def show
-    log = @exercise.workout_logs.find_by(date: params[:date])
-    render json: workout_log_json(log)
-  end
+  before_action :set_log
 
   def update
     if params[:sets].empty?
@@ -33,9 +28,7 @@ class Api::V1::Me::WorkoutLogsController < ApplicationController
 
   def set_exercise
     @exercise = current_user.exercises.find_by(id: params[:exercise_id])
-    if @exercise.nil?
-      render json: { error: "Not found" }, status: :not_found
-    end
+    render json: { error: "Not found" }, status: :not_found if @exercise.nil?
   end
 
   def set_log

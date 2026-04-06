@@ -7,34 +7,10 @@ Rails.application.routes.draw do
       get    "/auth/google/callback", to: "sessions#create"
       delete "/sessions",             to: "sessions#destroy"
 
-      namespace :me do
-        get :calendar
-        get :volume
-        resource  :profile, only: [ :show, :update, :destroy ]
-        resources :body_parts, only: [ :index, :create, :update, :destroy ] do
-          member do
-            get :volume
-          end
-          resources :exercises, only: [ :index, :create, :update, :destroy ]
-        end
-        resources :exercises, only: [] do
-          member do
-            get :one_rm_history
-            get :volume
-          end
-        end
-        resources :workout_logs, param: :date, only: [ :show, :update, :destroy ]
-        resources :friendships, only: [ :create, :update, :destroy ] do
-          collection do
-            get :friends
-            get :requests
-          end
-        end
-      end
-
-      scope '/friends/:account_id', module: 'friends', as: 'friend' do
-        get :calendar, to: 'friends#calendar'
-        get :volume,   to: 'friends#volume'
+      # 読み取り共用: 自分 / フレンド どちらも account_id で統一
+      scope '/users/:account_id', module: 'users', as: 'user' do
+        get :calendar, to: 'users#calendar'
+        get :volume,   to: 'users#volume'
         resources :body_parts, only: [ :index ] do
           member { get :volume }
           resources :exercises, only: [ :index ]
@@ -45,7 +21,22 @@ Rails.application.routes.draw do
             get :one_rm_history
           end
         end
-        resources :workout_logs, only: [ :index ]
+        resources :workout_logs, param: :date, only: [ :show ]
+      end
+
+      # 書き込み: 自分のみ
+      namespace :me do
+        resource  :profile, only: [ :show, :update, :destroy ]
+        resources :body_parts, only: [ :create, :update, :destroy ] do
+          resources :exercises, only: [ :create, :update, :destroy ]
+        end
+        resources :workout_logs, param: :date, only: [ :update, :destroy ]
+        resources :friendships, only: [ :create, :update, :destroy ] do
+          collection do
+            get :friends
+            get :requests
+          end
+        end
       end
 
     end
