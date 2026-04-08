@@ -15,26 +15,31 @@ export function BodyPartsModal({ onClose }: Props) {
   const [tab, setTab] = useState<"bodyParts" | "exercises">("bodyParts")
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={onClose}>
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 max-h-[80vh] flex flex-col"
+        className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[80vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold text-gray-800">部位・種目管理</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+        <div className="flex justify-between items-center mb-5">
+          <h2 className="text-base font-semibold text-slate-900">部位・種目管理</h2>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
-        <div className="flex gap-2 mb-4 border-b">
+        {/* タブ */}
+        <div className="flex gap-1 mb-5 bg-slate-100 rounded-xl p-1">
           {(["bodyParts", "exercises"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className={[
-                "pb-2 px-3 text-sm",
+                "flex-1 py-1.5 px-3 rounded-lg text-xs font-medium transition-colors",
                 tab === t
-                  ? "border-b-2 border-blue-500 text-blue-600 font-medium"
-                  : "text-gray-500 hover:text-gray-700",
+                  ? "bg-white text-slate-800 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700",
               ].join(" ")}
             >
               {t === "bodyParts" ? "部位" : "種目"}
@@ -85,54 +90,57 @@ function BodyPartsList({ accountId }: { accountId: string }) {
           value={newName}
           onChange={(e) => setNewName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-          className="flex-1 border rounded px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+          className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300"
         />
         <button
           onClick={handleCreate}
           disabled={!newName.trim() || createBodyPart.isPending}
-          className="bg-blue-500 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+          className="bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
         >
           追加
         </button>
       </div>
 
       {bodyParts.length === 0 && (
-        <p className="text-gray-400 text-sm text-center py-6">部位がありません</p>
+        <p className="text-slate-400 text-sm text-center py-8">部位がありません</p>
       )}
-      {bodyParts.map((bp) => (
-        <div key={bp.id} className="flex items-center gap-2 px-3 py-2 border rounded-lg">
-          {editingId === bp.id ? (
-            <>
-              <input
-                type="text"
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleUpdate(bp.id)}
-                className="flex-1 border rounded px-2 py-0.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-300"
-                autoFocus
-              />
-              <button onClick={() => handleUpdate(bp.id)} className="text-xs text-blue-500 hover:text-blue-700">保存</button>
-              <button onClick={() => setEditingId(null)} className="text-xs text-gray-400">キャンセル</button>
-            </>
-          ) : (
-            <>
-              <span className="flex-1 text-sm text-gray-700">{bp.name}</span>
-              <button
-                onClick={() => { setEditingId(bp.id); setEditingName(bp.name) }}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
-                編集
-              </button>
-              <button
-                onClick={() => deleteBodyPart.mutate(bp.id)}
-                className="text-xs text-red-400 hover:text-red-600"
-              >
-                削除
-              </button>
-            </>
-          )}
-        </div>
-      ))}
+
+      <div className="space-y-1">
+        {bodyParts.map((bp) => (
+          <div key={bp.id} className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50">
+            {editingId === bp.id ? (
+              <>
+                <input
+                  type="text"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(bp.id)}
+                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  autoFocus
+                />
+                <button onClick={() => handleUpdate(bp.id)} className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors">保存</button>
+                <button onClick={() => setEditingId(null)} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">キャンセル</button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm text-slate-700 font-medium">{bp.name}</span>
+                <button
+                  onClick={() => { setEditingId(bp.id); setEditingName(bp.name) }}
+                  className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  編集
+                </button>
+                <button
+                  onClick={() => deleteBodyPart.mutate(bp.id)}
+                  className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                >
+                  削除
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -164,7 +172,7 @@ function ExercisesList({ accountId }: { accountId: string }) {
 
   if (bodyParts.length === 0) {
     return (
-      <p className="text-gray-400 text-sm text-center py-6">
+      <p className="text-slate-400 text-sm text-center py-8">
         先に「部位」タブで部位を追加してください
       </p>
     )
@@ -178,7 +186,7 @@ function ExercisesList({ accountId }: { accountId: string }) {
           setSelectedBodyPartId(e.target.value ? Number(e.target.value) : null)
           setEditingId(null)
         }}
-        className="w-full border rounded px-3 py-1.5 text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-300"
+        className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm text-slate-700 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300"
       >
         <option value="">部位を選択</option>
         {bodyParts.map((bp) => (
@@ -194,12 +202,12 @@ function ExercisesList({ accountId }: { accountId: string }) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            className="flex-1 border rounded px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-300"
+            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300"
           />
           <button
             onClick={handleCreate}
             disabled={!newName.trim() || createExercise.isPending}
-            className="bg-blue-500 text-white px-3 py-1.5 rounded text-sm hover:bg-blue-600 disabled:opacity-50"
+            className="bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
           >
             追加
           </button>
@@ -207,43 +215,45 @@ function ExercisesList({ accountId }: { accountId: string }) {
       )}
 
       {selectedBodyPartId && exercises.length === 0 && (
-        <p className="text-gray-400 text-sm text-center py-4">種目がありません</p>
+        <p className="text-slate-400 text-sm text-center py-6">種目がありません</p>
       )}
 
-      {exercises.map((ex) => (
-        <div key={ex.id} className="flex items-center gap-2 px-3 py-2 border rounded-lg">
-          {editingId === ex.id ? (
-            <>
-              <input
-                type="text"
-                value={editingName}
-                onChange={(e) => setEditingName(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleUpdate(ex.id)}
-                className="flex-1 border rounded px-2 py-0.5 text-sm text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-300"
-                autoFocus
-              />
-              <button onClick={() => handleUpdate(ex.id)} className="text-xs text-blue-500 hover:text-blue-700">保存</button>
-              <button onClick={() => setEditingId(null)} className="text-xs text-gray-400">キャンセル</button>
-            </>
-          ) : (
-            <>
-              <span className="flex-1 text-sm text-gray-700">{ex.name}</span>
-              <button
-                onClick={() => { setEditingId(ex.id); setEditingName(ex.name) }}
-                className="text-xs text-gray-400 hover:text-gray-600"
-              >
-                編集
-              </button>
-              <button
-                onClick={() => deleteExercise.mutate({ id: ex.id, bodyPartId: ex.body_part_id })}
-                className="text-xs text-red-400 hover:text-red-600"
-              >
-                削除
-              </button>
-            </>
-          )}
-        </div>
-      ))}
+      <div className="space-y-1">
+        {exercises.map((ex) => (
+          <div key={ex.id} className="flex items-center gap-2 px-3 py-2.5 rounded-xl border border-slate-100 bg-slate-50">
+            {editingId === ex.id ? (
+              <>
+                <input
+                  type="text"
+                  value={editingName}
+                  onChange={(e) => setEditingName(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleUpdate(ex.id)}
+                  className="flex-1 border border-slate-200 rounded-lg px-2.5 py-1 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300"
+                  autoFocus
+                />
+                <button onClick={() => handleUpdate(ex.id)} className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors">保存</button>
+                <button onClick={() => setEditingId(null)} className="text-xs text-slate-400 hover:text-slate-600 transition-colors">キャンセル</button>
+              </>
+            ) : (
+              <>
+                <span className="flex-1 text-sm text-slate-700 font-medium">{ex.name}</span>
+                <button
+                  onClick={() => { setEditingId(ex.id); setEditingName(ex.name) }}
+                  className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  編集
+                </button>
+                <button
+                  onClick={() => deleteExercise.mutate({ id: ex.id, bodyPartId: ex.body_part_id })}
+                  className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                >
+                  削除
+                </button>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

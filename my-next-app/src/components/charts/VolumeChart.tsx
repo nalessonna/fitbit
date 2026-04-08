@@ -7,6 +7,7 @@ import {
 import { useVolume } from "@/lib/hooks/useVolume"
 import { useBodyParts } from "@/lib/hooks/useBodyParts"
 import { useExercises } from "@/lib/hooks/useExercises"
+import { SelectSheet } from "@/components/ui/SelectSheet"
 import type { VolumeEntry } from "@/lib/types"
 
 const PERIODS = [
@@ -16,7 +17,6 @@ const PERIODS = [
   { label: "全期間", value: "",        days: null },
 ]
 
-// 期間内の全日付を生成し、記録のない日は 0 で埋める
 function fillDates(data: VolumeEntry[], period: string): { date: string; volume: number }[] {
   const today   = new Date()
   const volumeMap = Object.fromEntries(data.map((d) => [d.date, Math.round(d.volume)]))
@@ -59,7 +59,6 @@ export function VolumeChart({ accountId }: Props) {
 
   const filled = fillDates(data, period)
 
-  // x軸ラベルの間引き間隔（棒が多いほど間引く）
   const tickInterval = filled.length > 180 ? 29 : filled.length > 60 ? 13 : 6
 
   const label = exerciseId
@@ -69,69 +68,71 @@ export function VolumeChart({ accountId }: Props) {
     : "全体"
 
   return (
-    <div className="space-y-2">
-      {/* フィルター */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <div className="flex gap-1">
-          {PERIODS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={[
-                "px-2 py-0.5 rounded-full text-xs",
-                period === p.value
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200",
-              ].join(" ")}
-            >
-              {p.label}
-            </button>
-          ))}
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="text-sm font-semibold text-slate-700">総ボリューム</h3>
+          <p className="text-xs text-slate-400 mt-0.5">{label}</p>
         </div>
-        <select
-          value={bodyPartId ?? ""}
-          onChange={(e) => {
-            setBodyPartId(e.target.value ? Number(e.target.value) : null)
-            setExerciseId(null)
-          }}
-          className="text-xs text-gray-800 bg-white border rounded px-2 py-0.5"
-        >
-          <option value="">全体</option>
-          {bodyParts.map((bp) => (
-            <option key={bp.id} value={bp.id}>{bp.name}</option>
-          ))}
-        </select>
-        {bodyPartId && (
-          <select
-            value={exerciseId ?? ""}
-            onChange={(e) => setExerciseId(e.target.value ? Number(e.target.value) : null)}
-            className="text-xs text-gray-800 bg-white border rounded px-2 py-0.5"
-          >
-            <option value="">部位全体</option>
-            {exercises.map((ex) => (
-              <option key={ex.id} value={ex.id}>{ex.name}</option>
+
+        {/* フィルター */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <div className="flex gap-1">
+            {PERIODS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => setPeriod(p.value)}
+                className={[
+                  "px-2.5 py-1 rounded-lg text-xs font-medium transition-colors",
+                  period === p.value
+                    ? "bg-indigo-500 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200",
+                ].join(" ")}
+              >
+                {p.label}
+              </button>
             ))}
-          </select>
-        )}
+          </div>
+          <SelectSheet
+            value={String(bodyPartId ?? "")}
+            onChange={(val) => {
+              setBodyPartId(val ? Number(val) : null)
+              setExerciseId(null)
+            }}
+            options={[
+              { value: "", label: "全体" },
+              ...bodyParts.map((bp) => ({ value: String(bp.id), label: bp.name })),
+            ]}
+          />
+          {bodyPartId && (
+            <SelectSheet
+              value={String(exerciseId ?? "")}
+              onChange={(val) => setExerciseId(val ? Number(val) : null)}
+              options={[
+                { value: "", label: "部位全体" },
+                ...exercises.map((ex) => ({ value: String(ex.id), label: ex.name })),
+              ]}
+            />
+          )}
+        </div>
       </div>
 
-      <h3 className="text-sm font-medium text-gray-500">総ボリューム（{label}）</h3>
-
       {isLoading ? (
-        <div className="h-48 flex items-center justify-center text-gray-400 text-sm">読み込み中...</div>
+        <div className="h-48 flex items-center justify-center text-slate-400 text-sm">読み込み中...</div>
       ) : filled.length === 0 ? (
-        <div className="h-48 flex items-center justify-center text-gray-400 text-sm">データなし</div>
+        <div className="h-48 flex items-center justify-center text-slate-400 text-sm">データなし</div>
       ) : (
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={filled} barCategoryGap="20%">
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-            <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={tickInterval} />
-            <YAxis tick={{ fontSize: 11 }} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+            <XAxis dataKey="date" tick={{ fontSize: 10, fill: "#94a3b8" }} interval={tickInterval} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} axisLine={false} tickLine={false} />
             <Tooltip
               formatter={(v) => [`${v} kg`, "総ボリューム"]}
-              cursor={{ fill: "#f0f0f0" }}
+              cursor={{ fill: "#f1f5f9" }}
+              contentStyle={{ borderRadius: "10px", border: "1px solid #e2e8f0", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.05)" }}
             />
-            <Bar dataKey="volume" fill="#3b82f6" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="volume" fill="#6366f1" radius={[3, 3, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       )}

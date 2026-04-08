@@ -17,8 +17,9 @@ export interface Exercise {
 }
 
 export interface CalendarExercise {
-  id:   number
-  name: string
+  id:          number
+  name:        string
+  body_part_id: number
   sets: { set_number: number; weight: number; reps: number }[]
 }
 

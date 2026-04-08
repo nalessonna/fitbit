@@ -5,7 +5,7 @@ import { redirect } from "next/navigation"
 
 interface Props {
   params:      Promise<{ date: string }>
-  searchParams: Promise<{ view?: string }>
+  searchParams: Promise<{ view?: string; exercise?: string; bodyPart?: string }>
 }
 
 export default async function WorkoutLogPage({ params, searchParams }: Props) {
@@ -13,12 +13,17 @@ export default async function WorkoutLogPage({ params, searchParams }: Props) {
   if (!cookieStore.get("auth_token")) redirect("/")
 
   const { date } = await params
-  const { view } = await searchParams
+  const { view, exercise, bodyPart } = await searchParams
 
   return (
-    <div className="max-w-lg mx-auto bg-white rounded-xl shadow p-6">
+    <div className="max-w-lg mx-auto bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
       <Suspense>
-        <WorkoutLogPageContent date={date} viewAccountId={view} />
+        <WorkoutLogPageContent
+          date={date}
+          viewAccountId={view}
+          initialExerciseId={exercise ? Number(exercise) : undefined}
+          initialBodyPartId={bodyPart ? Number(bodyPart) : undefined}
+        />
       </Suspense>
     </div>
   )
@@ -27,14 +32,16 @@ export default async function WorkoutLogPage({ params, searchParams }: Props) {
 function WorkoutLogPageContent({
   date,
   viewAccountId,
+  initialExerciseId,
+  initialBodyPartId,
 }: {
   date: string
   viewAccountId?: string
+  initialExerciseId?: number
+  initialBodyPartId?: number
 }) {
-  // accountId と isSelf はクライアント側で profile から解決する必要があるため
-  // WorkoutLogForm に委譲する
   return (
-    <WorkoutLogFormWrapper date={date} viewAccountId={viewAccountId} />
+    <WorkoutLogFormWrapper date={date} viewAccountId={viewAccountId} initialExerciseId={initialExerciseId} initialBodyPartId={initialBodyPartId} />
   )
 }
 

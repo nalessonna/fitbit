@@ -49,18 +49,26 @@ export function WorkoutCalendar({ accountId, selectedDate, onDateSelect, isSelf,
   }
 
   return (
-    <div className="bg-white rounded-xl shadow p-4 space-y-4">
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-5 space-y-4">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
-        <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded text-gray-600">‹</button>
-        <span className="font-semibold text-gray-800">{year}年{month}月</span>
-        <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded text-gray-600">›</button>
+        <button onClick={prevMonth} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+        <span className="font-semibold text-slate-800 text-sm">{year}年{month}月</span>
+        <button onClick={nextMonth} className="w-8 h-8 flex items-center justify-center hover:bg-slate-100 rounded-lg text-slate-500 transition-colors">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
       </div>
 
       {/* 曜日 */}
       <div className="grid grid-cols-7">
         {["日", "月", "火", "水", "木", "金", "土"].map((d) => (
-          <div key={d} className="text-center text-xs text-gray-400 py-1">{d}</div>
+          <div key={d} className="text-center text-xs text-slate-400 py-1 font-medium">{d}</div>
         ))}
       </div>
 
@@ -78,12 +86,12 @@ export function WorkoutCalendar({ accountId, selectedDate, onDateSelect, isSelf,
               key={dateStr}
               onClick={() => onDateSelect(dateStr)}
               className={[
-                "aspect-square rounded-lg text-sm flex items-center justify-center transition-colors",
+                "aspect-square rounded-xl text-sm flex items-center justify-center transition-colors font-medium",
                 isSelected
-                  ? "bg-blue-500 text-white"
+                  ? "bg-indigo-500 text-white shadow-sm"
                   : hasLog
-                  ? "bg-blue-100 text-blue-700 hover:bg-blue-200"
-                  : "hover:bg-gray-100 text-gray-700",
+                  ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
+                  : "hover:bg-slate-100 text-slate-700",
               ].join(" ")}
             >
               {day}
@@ -94,31 +102,41 @@ export function WorkoutCalendar({ accountId, selectedDate, onDateSelect, isSelf,
 
       {/* 選択日サマリー */}
       {selectedDate && (
-        <div className="border-t pt-3 space-y-3">
+        <div className="border-t border-slate-100 pt-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-gray-700">{selectedDate}</span>
+            <span className="text-sm font-semibold text-slate-700">{selectedDate}</span>
             <button
               onClick={handleLogNav}
-              className="text-xs bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              className="text-xs bg-indigo-500 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-600 transition-colors font-medium"
             >
               {isSelf ? "記録する" : "詳細を見る"}
             </button>
           </div>
 
           {selectedExercises.length === 0 ? (
-            <p className="text-xs text-gray-400">記録なし</p>
+            <p className="text-xs text-slate-400">記録なし</p>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               {selectedExercises.map((ex) => (
                 <div key={ex.id}>
-                  <p className="text-xs font-medium text-gray-600 mb-1">{ex.name}</p>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <p className="text-xs font-semibold text-slate-600">{ex.name}</p>
+                    {isSelf && (
+                      <button
+                        onClick={() => router.push(`/dashboard/log/${selectedDate}?exercise=${ex.id}&bodyPart=${ex.body_part_id}${viewAccountId ? `&view=${viewAccountId}` : ""}`)}
+                        className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+                      >
+                        編集
+                      </button>
+                    )}
+                  </div>
                   <div className="flex flex-wrap gap-1">
                     {ex.sets.map((s) => (
                       <span
                         key={s.set_number}
-                        className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+                        className="text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
                       >
-                        {s.set_number}セット目: {s.weight}kg × {s.reps}回
+                        {s.set_number}セット: {s.weight}kg × {s.reps}回
                       </span>
                     ))}
                   </div>

@@ -17,8 +17,9 @@ class WorkoutLog < ApplicationRecord
         exercise_names: day_logs.map { |l| l.exercise.name },
         exercises:      day_logs.map do |l|
           {
-            id:   l.exercise.id,
-            name: l.exercise.name,
+            id:           l.exercise.id,
+            name:         l.exercise.name,
+            body_part_id: l.exercise.body_part_id,
             sets: l.workout_sets.sort_by(&:set_number).map do |s|
               { set_number: s.set_number, weight: s.weight.to_f, reps: s.reps }
             end

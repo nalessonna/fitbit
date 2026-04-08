@@ -8,16 +8,18 @@ import { useWorkoutLog, useSaveWorkoutLog, useDeleteWorkoutLog } from "@/lib/hoo
 import type { WorkoutSet } from "@/lib/types"
 
 interface Props {
-  accountId: string
-  date:      string
-  isSelf:    boolean
+  accountId:          string
+  date:               string
+  isSelf:             boolean
+  initialExerciseId?: number
+  initialBodyPartId?: number
 }
 
-export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
+export function WorkoutLogForm({ accountId, date, isSelf, initialExerciseId, initialBodyPartId }: Props) {
   const router = useRouter()
 
-  const [selectedBodyPartId, setSelectedBodyPartId] = useState<number | null>(null)
-  const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(null)
+  const [selectedBodyPartId, setSelectedBodyPartId] = useState<number | null>(initialBodyPartId ?? null)
+  const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(initialExerciseId ?? null)
   const [sets, setSets] = useState<WorkoutSet[]>([{ set_number: 1, weight: 0, reps: 0 }])
 
   const { data: bodyParts = [] } = useBodyParts(accountId)
@@ -27,7 +29,6 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
   const saveLog   = useSaveWorkoutLog()
   const deleteLog = useDeleteWorkoutLog()
 
-  // 既存ログをフォームに反映
   useEffect(() => {
     if (log?.sets && log.sets.length > 0) setSets(log.sets)
     else setSets([{ set_number: 1, weight: 0, reps: 0 }])
@@ -59,14 +60,14 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-bold">{date}</h1>
-        <p className="text-sm text-gray-500">{isSelf ? "自分のログ" : "フレンドのログ（閲覧のみ）"}</p>
+        <h1 className="text-lg font-bold text-slate-900">{date}</h1>
+        <p className="text-xs text-slate-400 mt-0.5">{isSelf ? "自分のログ" : "フレンドのログ（閲覧のみ）"}</p>
       </div>
 
       {/* 部位・種目選択 */}
-      <div className="flex gap-3">
+      <div className="flex gap-2">
         <select
-          className="text-gray-800 bg-white border rounded px-3 py-2 text-sm flex-1"
+          className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300"
           value={selectedBodyPartId ?? ""}
           onChange={(e) => {
             setSelectedBodyPartId(e.target.value ? Number(e.target.value) : null)
@@ -80,7 +81,7 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
         </select>
 
         <select
-          className="text-gray-800 bg-white border rounded px-3 py-2 text-sm flex-1"
+          className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-50"
           value={selectedExerciseId ?? ""}
           onChange={(e) => setSelectedExerciseId(e.target.value ? Number(e.target.value) : null)}
           disabled={!selectedBodyPartId}
@@ -95,19 +96,19 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
       {/* セット入力 */}
       {selectedExerciseId && (
         <div className="space-y-3">
-          <div className="grid grid-cols-4 text-xs text-gray-400 px-1">
+          <div className="grid grid-cols-4 text-xs text-slate-400 px-1 font-medium">
             <span>セット</span><span>重量 (kg)</span><span>回数</span><span />
           </div>
 
           {sets.map((set, i) => (
             <div key={i} className="grid grid-cols-4 gap-2 items-center">
-              <span className="text-sm text-center">{set.set_number}</span>
+              <span className="text-sm text-center font-medium text-slate-500">{set.set_number}</span>
               <input
                 type="number"
                 value={set.weight || ""}
                 onChange={(e) => updateSet(i, "weight", Number(e.target.value))}
                 disabled={!isSelf}
-                className="border rounded px-2 py-1 text-sm disabled:bg-gray-50"
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:bg-slate-50 disabled:text-slate-400"
                 min={0}
                 step={0.5}
               />
@@ -116,13 +117,13 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
                 value={set.reps || ""}
                 onChange={(e) => updateSet(i, "reps", Number(e.target.value))}
                 disabled={!isSelf}
-                className="border rounded px-2 py-1 text-sm disabled:bg-gray-50"
+                className="border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:bg-slate-50 disabled:text-slate-400"
                 min={0}
               />
               {isSelf && (
                 <button
                   onClick={() => removeSet(i)}
-                  className="text-gray-300 hover:text-red-400 text-lg leading-none"
+                  className="text-slate-300 hover:text-red-400 text-lg leading-none transition-colors"
                 >
                   ×
                 </button>
@@ -133,7 +134,7 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
           {isSelf && (
             <button
               onClick={addSet}
-              className="text-sm text-blue-500 hover:text-blue-700"
+              className="text-sm text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
             >
               + セットを追加
             </button>
@@ -147,7 +148,7 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
           <button
             onClick={handleSave}
             disabled={saveLog.isPending}
-            className="flex-1 bg-blue-500 text-white rounded-lg py-2 text-sm hover:bg-blue-600 disabled:opacity-50"
+            className="flex-1 bg-indigo-500 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
           >
             {saveLog.isPending ? "保存中..." : "保存"}
           </button>
@@ -155,7 +156,7 @@ export function WorkoutLogForm({ accountId, date, isSelf }: Props) {
             <button
               onClick={handleDelete}
               disabled={deleteLog.isPending}
-              className="px-4 text-red-400 border border-red-200 rounded-lg text-sm hover:bg-red-50"
+              className="px-4 text-red-400 border border-red-200 rounded-xl text-sm font-medium hover:bg-red-50 transition-colors"
             >
               削除
             </button>
