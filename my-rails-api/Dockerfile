@@ -68,6 +68,7 @@ COPY --chown=rails:rails --from=build /rails /rails
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start server via Thruster by default, this can be overwritten at runtime
-EXPOSE 80
+# Thruster listens on 3000 (non-root cannot bind to port 80)
+ENV THRUSTER_HTTP_PORT=3000
+EXPOSE 3000
 CMD ["./bin/thrust", "./bin/rails", "server"]
