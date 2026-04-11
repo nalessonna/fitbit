@@ -1,4 +1,4 @@
-name: Deploy to AWS App Runner
+name: Deploy to AWS ECS
 
 on:
   push:
@@ -29,6 +29,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build & push Rails image
+        id: build-rails
         env:
           ECR_REGISTRY:   ${{ steps.ecr-login.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.RAILS_ECR_REPOSITORY }}
@@ -41,41 +42,36 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
           echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
-        id: build-rails
 
-      - name: Deploy Rails to App Runner
-        env:
-          ECR_REGISTRY:   ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.RAILS_ECR_REPOSITORY }}
-          IMAGE_TAG:      ${{ github.sha }}
+      - name: Download Rails task definition
         run: |
-          aws apprunner update-service \
-            --service-arn ${{ secrets.RAILS_SERVICE_ARN }} \
-            --source-configuration '{
-              "ImageRepository": {
-                "ImageIdentifier": "'"$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"'",
-                "ImageRepositoryType": "ECR",
-                "ImageConfiguration": {
-                  "Port": "80",
-                  "RuntimeEnvironmentVariables": {
-                    "DATABASE_URL":          "${{ secrets.DATABASE_URL }}",
-                    "SECRET_KEY_BASE":       "${{ secrets.SECRET_KEY_BASE }}",
-                    "GOOGLE_CLIENT_ID":      "${{ secrets.GOOGLE_CLIENT_ID }}",
-                    "GOOGLE_CLIENT_SECRET":  "${{ secrets.GOOGLE_CLIENT_SECRET }}",
-                    "FRONTEND_URL":          "${{ secrets.FRONTEND_URL }}",
-                    "RAILS_ENV":             "production"
-                  }
-                }
-              },
-              "AuthenticationConfiguration": {
-                "AccessRoleArn": "${{ secrets.APP_RUNNER_ECR_ROLE_ARN }}"
-              }
-            }'
+          aws ecs describe-task-definition \
+            --task-definition ${{ secrets.ECS_RAILS_TASK_DEFINITION }} \
+            --query taskDefinition \
+            > rails-task-def.json
 
-      - name: Wait for Rails deployment
-        run: |
-          aws apprunner wait service-updated \
-            --service-arn ${{ secrets.RAILS_SERVICE_ARN }}
+      - name: Update Rails task definition with new image
+        id: rails-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition:  rails-task-def.json
+          container-name:   ${{ secrets.RAILS_CONTAINER_NAME }}
+          image:            ${{ steps.build-rails.outputs.image }}
+          environment-variables: |
+            DATABASE_URL=${{ secrets.DATABASE_URL }}
+            SECRET_KEY_BASE=${{ secrets.SECRET_KEY_BASE }}
+            GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+            GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+            FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+            RAILS_ENV=production
+
+      - name: Deploy Rails to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition:          ${{ steps.rails-task-def.outputs.task-definition }}
+          service:                  ${{ secrets.ECS_RAILS_SERVICE_ARN }}
+          cluster:                  ${{ secrets.ECS_CLUSTER }}
+          wait-for-service-stability: true
 
   deploy-next:
     name: Build & Deploy Next.js
@@ -98,6 +94,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build & push Next.js image
+        id: build-next
         env:
           ECR_REGISTRY:   ${{ steps.ecr-login.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.NEXT_ECR_REPOSITORY }}
@@ -110,32 +107,29 @@ jobs:
             ./my-next-app
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-      - name: Deploy Next.js to App Runner
-        env:
-          ECR_REGISTRY:   ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.NEXT_ECR_REPOSITORY }}
-          IMAGE_TAG:      ${{ github.sha }}
+      - name: Download Next.js task definition
         run: |
-          aws apprunner update-service \
-            --service-arn ${{ secrets.NEXT_SERVICE_ARN }} \
-            --source-configuration '{
-              "ImageRepository": {
-                "ImageIdentifier": "'"$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"'",
-                "ImageRepositoryType": "ECR",
-                "ImageConfiguration": {
-                  "Port": "3000",
-                  "RuntimeEnvironmentVariables": {
-                    "RAILS_API_URL": "${{ secrets.RAILS_API_URL }}"
-                  }
-                }
-              },
-              "AuthenticationConfiguration": {
-                "AccessRoleArn": "${{ secrets.APP_RUNNER_ECR_ROLE_ARN }}"
-              }
-            }'
+          aws ecs describe-task-definition \
+            --task-definition ${{ secrets.ECS_NEXT_TASK_DEFINITION }} \
+            --query taskDefinition \
+            > next-task-def.json
 
-      - name: Wait for Next.js deployment
-        run: |
-          aws apprunner wait service-updated \
-            --service-arn ${{ secrets.NEXT_SERVICE_ARN }}
+      - name: Update Next.js task definition with new image
+        id: next-task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition:  next-task-def.json
+          container-name:   ${{ secrets.NEXT_CONTAINER_NAME }}
+          image:            ${{ steps.build-next.outputs.image }}
+          environment-variables: |
+            RAILS_API_URL=${{ secrets.NEXT_PUBLIC_RAILS_API_URL }}
+
+      - name: Deploy Next.js to ECS
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition:          ${{ steps.next-task-def.outputs.task-definition }}
+          service:                  ${{ secrets.ECS_NEXT_SERVICE_ARN }}
+          cluster:                  ${{ secrets.ECS_CLUSTER }}
+          wait-for-service-stability: true
