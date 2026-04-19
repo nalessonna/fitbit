@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { useBodyParts } from "@/lib/hooks/useBodyParts"
-import { useExercises } from "@/lib/hooks/useExercises"
+import { useBodyParts, useCreateBodyPart } from "@/lib/hooks/useBodyParts"
+import { useExercises, useCreateExercise } from "@/lib/hooks/useExercises"
 import { useWorkoutLog, useSaveWorkoutLog, useDeleteWorkoutLog } from "@/lib/hooks/useWorkoutLog"
+import { QuickAddForm } from "@/components/ui/QuickAddForm"
 import type { WorkoutSet } from "@/lib/types"
 
 interface Props {
@@ -21,13 +22,17 @@ export function WorkoutLogForm({ accountId, date, isSelf, initialExerciseId, ini
   const [selectedBodyPartId, setSelectedBodyPartId] = useState<number | null>(initialBodyPartId ?? null)
   const [selectedExerciseId, setSelectedExerciseId] = useState<number | null>(initialExerciseId ?? null)
   const [sets, setSets] = useState<WorkoutSet[]>([{ set_number: 1, weight: 0, reps: 0 }])
+  const [addingBodyPart, setAddingBodyPart] = useState(false)
+  const [addingExercise, setAddingExercise] = useState(false)
 
   const { data: bodyParts = [] } = useBodyParts(accountId)
   const { data: exercises = [] } = useExercises(accountId, selectedBodyPartId)
   const { data: log }            = useWorkoutLog(accountId, date, selectedExerciseId)
 
-  const saveLog   = useSaveWorkoutLog()
-  const deleteLog = useDeleteWorkoutLog()
+  const saveLog        = useSaveWorkoutLog()
+  const deleteLog      = useDeleteWorkoutLog()
+  const createBodyPart = useCreateBodyPart(accountId)
+  const createExercise = useCreateExercise(accountId)
 
   useEffect(() => {
     if (log?.sets && log.sets.length > 0) setSets(log.sets)
@@ -65,32 +70,80 @@ export function WorkoutLogForm({ accountId, date, isSelf, initialExerciseId, ini
       </div>
 
       {/* 部位・種目選択 */}
-      <div className="flex gap-2">
-        <select
-          className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-          value={selectedBodyPartId ?? ""}
-          onChange={(e) => {
-            setSelectedBodyPartId(e.target.value ? Number(e.target.value) : null)
-            setSelectedExerciseId(null)
-          }}
-        >
-          <option value="">部位を選択</option>
-          {bodyParts.map((bp) => (
-            <option key={bp.id} value={bp.id}>{bp.name}</option>
-          ))}
-        </select>
+      <div className="space-y-2">
+        <div className="flex gap-2 items-center">
+          <select
+            className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+            value={selectedBodyPartId ?? ""}
+            onChange={(e) => {
+              setSelectedBodyPartId(e.target.value ? Number(e.target.value) : null)
+              setSelectedExerciseId(null)
+              setAddingExercise(false)
+            }}
+          >
+            <option value="">部位を選択</option>
+            {bodyParts.map((bp) => (
+              <option key={bp.id} value={bp.id}>{bp.name}</option>
+            ))}
+          </select>
+          {isSelf && !addingBodyPart && (
+            <button
+              onClick={() => { setAddingBodyPart(true); setAddingExercise(false) }}
+              className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors whitespace-nowrap"
+            >
+              ＋部位を追加
+            </button>
+          )}
+        </div>
 
-        <select
-          className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-50"
-          value={selectedExerciseId ?? ""}
-          onChange={(e) => setSelectedExerciseId(e.target.value ? Number(e.target.value) : null)}
-          disabled={!selectedBodyPartId}
-        >
-          <option value="">種目を選択</option>
-          {exercises.map((ex) => (
-            <option key={ex.id} value={ex.id}>{ex.name}</option>
-          ))}
-        </select>
+        {isSelf && addingBodyPart && (
+          <QuickAddForm
+            placeholder="新しい部位名"
+            onAdd={async (name) => {
+              const newBp = await createBodyPart.mutateAsync(name)
+              setSelectedBodyPartId(newBp.id)
+              setSelectedExerciseId(null)
+              setAddingBodyPart(false)
+            }}
+            isPending={createBodyPart.isPending}
+            onCancel={() => setAddingBodyPart(false)}
+          />
+        )}
+
+        <div className="flex gap-2 items-center">
+          <select
+            className="text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 flex-1 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:opacity-50"
+            value={selectedExerciseId ?? ""}
+            onChange={(e) => setSelectedExerciseId(e.target.value ? Number(e.target.value) : null)}
+            disabled={!selectedBodyPartId}
+          >
+            <option value="">種目を選択</option>
+            {exercises.map((ex) => (
+              <option key={ex.id} value={ex.id}>{ex.name}</option>
+            ))}
+          </select>
+          {isSelf && selectedBodyPartId && !addingExercise && (
+            <button
+              onClick={() => { setAddingExercise(true); setAddingBodyPart(false) }}
+              className="text-xs text-indigo-500 hover:text-indigo-700 font-medium transition-colors whitespace-nowrap"
+            >
+              ＋種目を追加
+            </button>
+          )}
+        </div>
+
+        {isSelf && addingExercise && selectedBodyPartId && (
+          <QuickAddForm
+            placeholder="新しい種目名"
+            onAdd={async (name) => {
+              const newEx = await createExercise.mutateAsync({ bodyPartId: selectedBodyPartId, name })
+              setSelectedExerciseId(newEx.id)
+              setAddingExercise(false)
+            }}
+            isPending={createExercise.isPending}
+            onCancel={() => setAddingExercise(false)}
+          />
+        )}
       </div>
 
       {/* セット入力 */}

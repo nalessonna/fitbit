@@ -80,6 +80,7 @@ export function WorkoutCalendar({ accountId, selectedDate, onDateSelect, isSelf,
           const dateStr    = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`
           const hasLog     = workoutDates.has(dateStr)
           const isSelected = dateStr === selectedDate
+          const isToday    = dateStr === `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
 
           return (
             <button
@@ -92,6 +93,7 @@ export function WorkoutCalendar({ accountId, selectedDate, onDateSelect, isSelf,
                   : hasLog
                   ? "bg-indigo-50 text-indigo-600 hover:bg-indigo-100"
                   : "hover:bg-slate-100 text-slate-700",
+                isToday && !isSelected ? "ring-2 ring-indigo-400 ring-offset-1" : "",
               ].join(" ")}
             >
               {day}

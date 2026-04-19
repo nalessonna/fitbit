@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useAppStore } from "@/lib/store"
 import { useBodyParts, useCreateBodyPart, useUpdateBodyPart, useDeleteBodyPart } from "@/lib/hooks/useBodyParts"
 import { useExercises, useCreateExercise, useUpdateExercise, useDeleteExercise } from "@/lib/hooks/useExercises"
+import { QuickAddForm } from "@/components/ui/QuickAddForm"
 
 interface Props {
   onClose: () => void
@@ -65,15 +66,9 @@ function BodyPartsList({ accountId }: { accountId: string }) {
   const updateBodyPart = useUpdateBodyPart(accountId)
   const deleteBodyPart = useDeleteBodyPart(accountId)
 
-  const [newName, setNewName]         = useState("")
+  const [adding, setAdding]           = useState(false)
   const [editingId, setEditingId]     = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
-
-  const handleCreate = async () => {
-    if (!newName.trim()) return
-    await createBodyPart.mutateAsync(newName.trim())
-    setNewName("")
-  }
 
   const handleUpdate = async (id: number) => {
     if (!editingName.trim()) return
@@ -83,23 +78,20 @@ function BodyPartsList({ accountId }: { accountId: string }) {
 
   return (
     <div className="space-y-3">
-      <div className="flex gap-2">
-        <input
-          type="text"
+      <button
+        onClick={() => setAdding(true)}
+        className="text-sm text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
+      >
+        + 部位を追加
+      </button>
+      {adding && (
+        <QuickAddForm
           placeholder="新しい部位名"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-          className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300"
+          onAdd={async (name) => { await createBodyPart.mutateAsync(name) }}
+          isPending={createBodyPart.isPending}
+          onCancel={() => setAdding(false)}
         />
-        <button
-          onClick={handleCreate}
-          disabled={!newName.trim() || createBodyPart.isPending}
-          className="bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
-        >
-          追加
-        </button>
-      </div>
+      )}
 
       {bodyParts.length === 0 && (
         <p className="text-slate-400 text-sm text-center py-8">部位がありません</p>
@@ -154,15 +146,9 @@ function ExercisesList({ accountId }: { accountId: string }) {
   const updateExercise = useUpdateExercise(accountId)
   const deleteExercise = useDeleteExercise(accountId)
 
-  const [newName, setNewName]         = useState("")
+  const [adding, setAdding]           = useState(false)
   const [editingId, setEditingId]     = useState<number | null>(null)
   const [editingName, setEditingName] = useState("")
-
-  const handleCreate = async () => {
-    if (!newName.trim() || !selectedBodyPartId) return
-    await createExercise.mutateAsync({ bodyPartId: selectedBodyPartId, name: newName.trim() })
-    setNewName("")
-  }
 
   const handleUpdate = async (id: number) => {
     if (!editingName.trim() || !selectedBodyPartId) return
@@ -195,23 +181,22 @@ function ExercisesList({ accountId }: { accountId: string }) {
       </select>
 
       {selectedBodyPartId && (
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="新しい種目名"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleCreate()}
-            className="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-300"
-          />
+        <>
           <button
-            onClick={handleCreate}
-            disabled={!newName.trim() || createExercise.isPending}
-            className="bg-indigo-500 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors"
+            onClick={() => setAdding(true)}
+            className="text-sm text-indigo-500 hover:text-indigo-700 font-medium transition-colors"
           >
-            追加
+            + 種目を追加
           </button>
-        </div>
+          {adding && (
+            <QuickAddForm
+              placeholder="新しい種目名"
+              onAdd={async (name) => { await createExercise.mutateAsync({ bodyPartId: selectedBodyPartId, name }) }}
+              isPending={createExercise.isPending}
+              onCancel={() => setAdding(false)}
+            />
+          )}
+        </>
       )}
 
       {selectedBodyPartId && exercises.length === 0 && (
